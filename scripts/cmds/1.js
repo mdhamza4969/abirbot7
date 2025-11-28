@@ -25,7 +25,7 @@ module.exports.onStart = async function({ api, args, Users, event }) {
     }
 
     var mention = Object.keys(event.mentions)[0];
-    if(!mention) return api.sendMessage("BaYjid Boss! খানকির পোলারে একটা মেনশন দেন-!!🫂", event.threadID);
+    if(!mention) return api.sendMessage("ABIR Boss! খানকির পোলারে একটা মেনশন দেন-!!🫂", event.threadID);
     let name = event.mentions[mention];
     var arraytag = [{ id: mention, tag: name }];
     var a = (m) => api.sendMessage(m, event.threadID);
