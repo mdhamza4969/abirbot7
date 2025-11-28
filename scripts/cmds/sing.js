@@ -82,7 +82,7 @@ module.exports = {
 ⏱ Duration : ${video.time}
 📺 Channel : ${video.channel?.name || "Unknown"}
 
-By —͟͟͞͞💜َ ABIR-: )•⊰𝟑
+By —͟͟͞͞💜َ 𝐁𝐚𝐘 𝐣𝐢𝐝-: )•⊰𝟑
 `;
 
       await message.reply({
