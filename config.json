@@ -21,12 +21,12 @@
     "61555978178537"
   ],
   "whiteListMode": {
-    "enable": false,
+    "enable": true,
     "whiteListIds": ["61582917346905", "61555978178537" ,"61565271650421"],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
   "nickNameBot": "ABIR BOT",
-  "prefix": "/",
+  "prefix": "✓",
   "database": {
     "type": "sqlite",
     "uriMongodb": "",
