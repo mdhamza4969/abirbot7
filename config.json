@@ -22,11 +22,11 @@
   ],
   "whiteListMode": {
     "enable": true,
-    "whiteListIds": ["61582917346905", "61555978178537" ,"61565271650421"],
+    "whiteListIds": ["61582917346905", "61555978178537"],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
   "nickNameBot": "ABIR BOT",
-  "prefix": "✓",
+  "prefix": "/",
   "database": {
     "type": "sqlite",
     "uriMongodb": "",
@@ -59,7 +59,7 @@
     "socket": {
       "enable": true,
       "channelName": "uptime",
-      "verifyToken": "srv-d4k669c9c44c73eof1sg"
+      "verifyToken": "srv-d4orko7diees73euh650"
     }
   },
   "autoRestart": {
