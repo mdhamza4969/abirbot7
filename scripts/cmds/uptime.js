@@ -3,7 +3,7 @@ module.exports = {
     name: "uptime",
     aliases: ["upt", "up"],
     version: "1.7",
-    author: "MahMUD",
+    author: "ABIR",
     role: 0,
     category: "general",
     guide: {
