@@ -1,27 +1,27 @@
 module.exports = {
-  config: {
-    name: "leave",
-    eventType: ["log:unsubscribe"],
-    version: "1.1",
-    author: "ABIR BOT",
-    category: "events"
-  },
+    config: {
+        name: "leave",
+        version: "1.0",
+        author: "ChatGPT",
+        category: "events"
+    },
 
-  onStart: async ({ api, event }) => {
-    try {
-      const leftUserId = event.logMessageData.leftParticipantFbId;
-      const threadID = event.threadID;
+    onStart: async ({ message, event, api, usersData }) => {
+        // Check if event is leave
+        if (event.logMessageType !== "log:unsubscribe") return;
 
-      if (!leftUserId) return;
+        const { leftParticipantFbId } = event.logMessageData;
 
-      const userInfo = await api.getUserInfo(leftUserId);
-      const userName = userInfo[leftUserId].name;
+        // Ignore bot itself
+        if (leftParticipantFbId == api.getCurrentUserID()) return;
 
-      const msg = `❌ Someone left the group!\n👤 Name: ${userName}\n🆔 UID: ${leftUserId}`;
+        // Get user name
+        const userName = await usersData.getName(leftParticipantFbId);
 
-      api.sendMessage(msg, threadID);
-    } catch (err) {
-      console.error(err);
+        // Create message
+        const leaveMsg = `❌ Someone left the group\n\n👤 Name: ${userName}\n🆔 UID: ${leftParticipantFbId}`;
+
+        // Send message
+        message.send(leaveMsg);
     }
-  }
 };
