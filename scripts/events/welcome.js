@@ -3,47 +3,50 @@ module.exports = {
         name: "welcome",
         version: "1.0",
         author: "ABIR",
-        category: "events"
+        category: "events",
     },
 
     onEvent: async ({ api, event }) => {
-        try {
-            const { threadID, messageID, logMessageType, logMessageData } = event;
+        const { threadID, logMessageType, logMessageData } = event;
 
-            // চেক করা হচ্ছে কেউ অ্যাড হয়েছে কিনা
-            if (logMessageType === "log:subscribe") {
-                const addedParticipants = logMessageData.addedParticipants;
+        // কেউ গ্রুপে অ্যাড হলে
+        if (logMessageType === "log:subscribe") {
+            const addedUsers = logMessageData.addedParticipants;
+            if (!addedUsers || addedUsers.length === 0) return;
 
-                if (!addedParticipants || addedParticipants.length === 0) return;
+            try {
+                // গ্রুপের নাম
+                const threadInfo = await api.getThreadInfo(threadID);
+                const groupName = threadInfo.threadName;
 
-                for (const user of addedParticipants) {
-                    const newUserName = user.fullName || "Unknown";
+                for (let user of addedUsers) {
+                    const newUserName = user.fullName;
                     const newUserId = user.userID;
 
                     // যিনি অ্যাড করেছেন তার নাম
                     let adderName = "Unknown";
-                    if (user._id) {
+                    if (logMessageData.addedParticipants.length > 0) {
                         try {
-                            const adder = await api.getUserInfo(user._id);
-                            adderName = adder[user._id].name || "Unknown";
+                            // প্রথম ইউজার অ্যাড করলে সাধারণত actorID যিনি অ্যাড করেছেন
+                            const actorID = logMessageData.actorFbId || logMessageData.adderID || null;
+                            if (actorID) {
+                                const info = await api.getUserInfo(actorID);
+                                adderName = info[actorID].name || "Unknown";
+                            }
                         } catch (err) {
                             console.log("Error fetching adder info:", err);
                         }
                     }
 
-                    // গ্রুপের তথ্য
-                    const threadInfo = await api.getThreadInfo(threadID);
-                    const groupName = threadInfo.threadName || "this group";
-
-                    // মেসেজ বানানো
-                    const welcomeMessage = `Hey ${newUserName} welcome to ${groupName}\nAdd by: ${adderName}\nUid: ${newUserId}\nFOLLOW ALL RULES 🩷\n🖤-ABIR-🖤`;
+                    // মেসেজ তৈরি
+                    const message = `Hey ${newUserName} welcome to ${groupName}\nAdd by: ${adderName}\nUid: ${newUserId}\nFOLLOW ALL RULES 🩷\n🖤-ABIR-🖤`;
 
                     // মেসেজ পাঠানো
-                    api.sendMessage(welcomeMessage, threadID);
+                    api.sendMessage(message, threadID);
                 }
+            } catch (err) {
+                console.log("Welcome event error:", err);
             }
-        } catch (err) {
-            console.log("Welcome event error:", err);
         }
-    }
+    },
 };
