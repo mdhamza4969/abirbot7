@@ -1,78 +1,44 @@
+const { getTime } = global.utils;
+
 module.exports = {
     config: {
-        name: "groupEvents",
-        version: "1.0",
-        author: "ABIR",
+        name: "welcome",
+        version: "3.1",
+        author: "ABIR EDIT",
         category: "events"
     },
 
-    onEvent: async ({ api, event }) => {
-        try {
-            const { threadID, logMessageType, logMessageData } = event;
+    onStart: async function ({ threadsData, message, event, api }) {
+        if (event.logMessageType !== "log:subscribe") return;
 
-            // গ্রুপে নতুন কেউ অ্যাড হলে
-            if (logMessageType === "log:subscribe") {
-                const addedUsers = logMessageData.addedParticipants;
-                if (!addedUsers || addedUsers.length === 0) return;
+        const threadID = event.threadID;
+        const threadData = await threadsData.get(threadID);
+        const threadName = threadData.threadName;
 
-                const threadInfo = await api.getThreadInfo(threadID);
-                const groupName = threadInfo.threadName || "this group";
+        const addedMembers = event.logMessageData.addedParticipants;
+        const addedBy = event.author;
 
-                // যিনি অ্যাড করেছেন
-                const actorID = logMessageData.actorFbId || event.senderID;
-                let adderName = "Unknown";
-                try {
-                    const info = await api.getUserInfo(actorID);
-                    adderName = info[actorID] ? info[actorID].name : "Unknown";
-                } catch (err) {}
+        // Adder info
+        const addedByInfo = await api.getUserInfo(addedBy);
+        const addedByName = addedByInfo[addedBy].name;
 
-                for (const user of addedUsers) {
-                    const newUserName = user.fullName || "Unknown";
-                    const newUserId = user.userID || user.id || "Unknown";
+        for (const user of addedMembers) {
+            const name = user.fullName;
+            const uid = user.userFbId;
 
-                    const welcomeMessage = 
-`Hey ${newUserName} welcome to ${groupName}
-Add by: ${adderName}
-Uid: ${newUserId}
-FOLLOW ALL RULES 🩷
-🖤-ABIR-🖤`;
+            const messageBody =
+`HEY ${name}
+WELCOME TO ${threadName}
+UID: ${uid}
+ADD BY: ${addedByName}
 
-                    api.sendMessage(welcomeMessage, threadID);
-                }
-            }
+PLEASE FOLLOW ALL RULES 🖤
+🖤🖤🖤🖤`;
 
-            // গ্রুপ থেকে কেউ বের হলে
-            if (logMessageType === "log:unsubscribe") {
-                const leftUsers = logMessageData.leftParticipants;
-                if (!leftUsers || leftUsers.length === 0) return;
-
-                const threadInfo = await api.getThreadInfo(threadID);
-                const groupName = threadInfo.threadName || "this group";
-
-                // যিনি বের করেছেন বা চলে গেছেন
-                const actorID = logMessageData.actorFbId || event.senderID;
-                let adderName = "Unknown";
-                try {
-                    const info = await api.getUserInfo(actorID);
-                    adderName = info[actorID] ? info[actorID].name : "Unknown";
-                } catch (err) {}
-
-                for (const user of leftUsers) {
-                    const leftUserName = user.fullName || "Unknown";
-                    const leftUserId = user.userID || user.id || "Unknown";
-
-                    const leaveMessage = 
-`${leftUserName} has left ${groupName}
-Left by: ${adderName}
-Uid: ${leftUserId}
-GOODBYE 🖤`;
-
-                    api.sendMessage(leaveMessage, threadID);
-                }
-            }
-
-        } catch (err) {
-            console.error("Group events error:", err);
+            message.send({
+                body: messageBody,
+                mentions: [{ tag: name, id: uid }]
+            });
         }
     }
 };
