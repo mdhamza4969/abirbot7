@@ -3,7 +3,7 @@ const { getTime } = global.utils;
 module.exports = {
     config: {
         name: "welcome",
-        version: "3.1",
+        version: "4.0",
         author: "ABIR EDIT",
         category: "events"
     },
@@ -18,25 +18,30 @@ module.exports = {
         const addedMembers = event.logMessageData.addedParticipants;
         const addedBy = event.author;
 
-        // Adder info
-        const addedByInfo = await api.getUserInfo(addedBy);
-        const addedByName = addedByInfo[addedBy].name;
+        // Fetch adder info
+        const adderInfo = await api.getUserInfo(addedBy);
+        const addedByName = adderInfo[addedBy].name;
 
         for (const user of addedMembers) {
             const name = user.fullName;
             const uid = user.userFbId;
 
-            const messageBody =
-`HEY ${name}
-WELCOME TO ${threadName}
-UID: ${uid}
-ADD BY: ${addedByName}
-
-PLEASE FOLLOW ALL RULES 🖤
-🖤🖤🖤🖤`;
+            const text =
+`𝗛𝗘𝗬 ${name}
+━━━━━━━━━━━━━━━━━━━━━━━
+𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢: ${threadName}
+━━━━━━━━━━━━━━━━━━━━━━━
+𝗨𝗜𝗗: ${uid}
+━━━━━━━━━━━━━━━━━━━━━━━
+𝗔𝗗𝗗 𝗕𝗬: ${addedByName}
+━━━━━━━━━━━━━━━━━━━━━━━
+𝗣𝗟𝗘𝗔𝗦𝗘 𝗙𝗢𝗟𝗟𝗢𝗪 𝗔𝗟𝗟 𝗥𝗨𝗟𝗘𝗦 🖤
+━━━━━━━━━━━━━━━━━━━━━━━
+🖤🖤~𝗔𝗕𝗜𝗥~🖤🖤
+𝗙𝗕-https://www.facebook.com/Abir419`;
 
             message.send({
-                body: messageBody,
+                body: text,
                 mentions: [{ tag: name, id: uid }]
             });
         }
