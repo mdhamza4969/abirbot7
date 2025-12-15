@@ -3,12 +3,14 @@ const b = require("fs");
 const c = require("path");
 const d = require("yt-search");
 
+const nix = "https://raw.githubusercontent.com/aryannix/stuffs/master/raw/apis.json";
+
 module.exports = {
   config: {
     name: "sing",
     aliases: ["music", "song"],
     version: "0.0.1",
-    author: "Robiul",
+    author: "ArYAN",
     countDown: 5,
     role: 0,
     shortDescription: "Sing tomake chai",
@@ -20,8 +22,19 @@ module.exports = {
   onStart: async function ({ api: e, event: f, args: g }) {
     if (!g.length) return e.sendMessage("❌ Provide a song name or YouTube URL.", f.threadID, f.messageID);
 
-    let h = g.join(" ");
+    let baseApi;
     const i = await e.sendMessage("🎵 Please wait...", f.threadID, null, f.messageID);
+    
+    try {
+      const configRes = await a.get(nix);
+      baseApi = configRes.data && configRes.data.api;
+      if (!baseApi) throw new Error("Configuration Error: Missing API in GitHub JSON.");
+    } catch (error) {
+      e.unsendMessage(i.messageID);
+      return e.sendMessage("❌ Failed to fetch API configuration from GitHub.", f.threadID, f.messageID);
+    }
+
+    let h = g.join(" ");
 
     try {
       let j;
@@ -33,7 +46,7 @@ module.exports = {
         j = k.videos[0].url;
       }
 
-      const l = `http://65.109.80.126:20409/aryan/play?url=${encodeURIComponent(j)}`;
+      const l = `${baseApi}/play?url=${encodeURIComponent(j)}`;
       const m = await a.get(l);
       const n = m.data;
 
