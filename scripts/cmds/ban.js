@@ -63,8 +63,7 @@ module.exports = {
 			bannedKick: "⚠️ | %1 has been banned from box chat before!\nUID: %2\nReason: %3\nBan time: %4\n\nBot has automatically kicked this member"
 		}
 	},
-
-	onStart: async function ({ message, event, args, threadsData, getLang, usersData, api }) {
+onStart: async function ({ message, event, args, threadsData, getLang, usersData, api }) {
 		const { members, adminIDs } = await threadsData.get(event.threadID);
 		const { senderID } = event;
 		let target;
@@ -140,7 +139,7 @@ module.exports = {
 
 		if (!target)
 			return message.reply(getLang('notFoundTarget'));
-		if (target == senderID)
+if (target == senderID)
 			return message.reply(getLang('cantSelfBan'));
 		if (adminIDs.includes(target))
 			return message.reply(getLang('cantBanAdmin'));
