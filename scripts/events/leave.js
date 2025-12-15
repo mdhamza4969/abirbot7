@@ -1,74 +1,54 @@
-const { getTime, drive } = global.utils;
+const fs = require("fs");
 
 module.exports = {
     config: {
         name: "leave",
-        version: "1.6",
-        author: "NTKhang + Updated by ChatGPT",
+        version: "2.0",
+        author: "ChatGPT",
         category: "events"
     },
 
-    langs: {
-        vi: {
-            session1: "sáng",
-            session2: "trưa",
-            session3: "chiều",
-            session4: "tối",
-            leaveType1: "tự rời",
-            leaveType2: "bị kick",
-            defaultLeaveMessage: "{userName} (UID: {uid}) đã {type} khỏi nhóm"
-        },
-        en: {
-            session1: "morning",
-            session2: "noon",
-            session3: "afternoon",
-            session4: "evening",
-            leaveType1: "left",
-            leaveType2: "was kicked from",
-            defaultLeaveMessage: "{userName} (UID: {uid}) {type} the group"
-        }
-    },
-
-    onStart: async ({ threadsData, message, event, api, usersData, getLang }) => {
+    onStart: async ({ message, event, api, usersData }) => {
         if (event.logMessageType !== "log:unsubscribe") return;
 
         const { threadID } = event;
-        const threadData = await threadsData.get(threadID);
-        if (!threadData.settings.sendLeaveMessage) return;
-
         const { leftParticipantFbId } = event.logMessageData;
+
+        // ignore bot
         if (leftParticipantFbId == api.getCurrentUserID()) return;
 
-        const hours = getTime("HH");
-        const threadName = threadData.threadName;
         const userName = await usersData.getName(leftParticipantFbId);
+        const threadInfo = await api.getThreadInfo(threadID);
+        const groupName = threadInfo.threadName;
 
-        let leaveMessage = threadData.data.leaveMessage || getLang("defaultLeaveMessage");
+        const leaveMsg =
+`${userName} 𝗟𝗘𝗙𝗧 𝗧𝗛𝗘 𝗚𝗥𝗢𝗨𝗣 (${groupName})
 
-        // Replace placeholders
-        leaveMessage = leaveMessage
-            .replace(/\{userName\}|\{userNameTag\}/g, userName)
-            .replace(/\{uid\}/g, leftParticipantFbId)
-            .replace(/\{type\}/g, leftParticipantFbId == event.author ? getLang("leaveType1") : getLang("leaveType2"))
-            .replace(/\{threadName\}|\{boxName\}/g, threadName)
-            .replace(/\{time\}/g, hours)
-            .replace(/\{session\}/g, hours <= 10 ? getLang("session1") : hours <= 12 ? getLang("session2") : hours <= 18 ? getLang("session3") : getLang("session4"));
+𝗨𝗜𝗗: ${leftParticipantFbId}
 
-        const form = { body: leaveMessage };
+𝗔𝗚𝗔𝗜𝗡 𝗔𝗗𝗗 - 𝗥𝗘𝗔𝗖𝗧 𝗧𝗛𝗜𝗦 𝗠𝗔𝗦𝗦𝗔𝗚𝗘 🖤🥀`;
 
-        // Handle mentions
-        if (leaveMessage.includes("{userNameTag}")) {
-            form.mentions = [{ id: leftParticipantFbId, tag: userName }];
+        message.send(leaveMsg, (err, info) => {
+            if (err) return;
+
+            // save data for reaction add
+            global.leaveReactData = global.leaveReactData || {};
+            global.leaveReactData[info.messageID] = {
+                uid: leftParticipantFbId,
+                threadID
+            };
+        });
+    },
+
+    onReaction: async ({ event, api }) => {
+        const data = global.leaveReactData?.[event.messageID];
+        if (!data) return;
+
+        try {
+            await api.addUserToGroup(data.uid, data.threadID);
+            delete global.leaveReactData[event.messageID];
+        } catch (e) {
+            console.log("Failed to re-add user:", e.message);
         }
-
-        // Handle attachments
-        if (threadData.data.leaveAttachment && Array.isArray(threadData.data.leaveAttachment)) {
-            const attachments = await Promise.all(
-                threadData.data.leaveAttachment.map(file => drive.getFile(file, "stream").catch(() => null))
-            );
-            form.attachment = attachments.filter(Boolean);
-        }
-
-        await message.send(form);
     }
 };
