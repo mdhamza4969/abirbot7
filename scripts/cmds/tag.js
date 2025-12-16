@@ -1,11 +1,11 @@
 module.exports = {
   config: {
     name: "tag",
-    version: "1.4",
+    version: "1.5",
     author: "SABBIR",
     role: 0,
-    shortDescription: { en: "Tag user with  reason" },
-    longDescription: { en: "Tag a user by first name and show  reason" },
+    shortDescription: { en: "Tag user with auto reason format" },
+    longDescription: { en: "Tag user by first name and auto show 📌reason" },
     category: "box chat",
     guide: { en: "{p}tag <user first name> <reason>" }
   },
@@ -19,18 +19,13 @@ module.exports = {
     const info = await api.getThreadInfo(threadID);
     const members = info.userInfo;
 
-    const fullText = args.join(" ");
+    // First word = user first name
+    const nameInput = args[0].toLowerCase();
 
-    // Split by 
-    const parts = fullText.split.map(t => t.trim());
+    // Rest words = reason
+    const reason = args.slice(1).join(" ");
 
-    if (parts.length < 2)
-      return message.reply("❌ Please use  before reason.");
-
-    const nameInput = parts[0].toLowerCase();
-    const reason = parts[1] || "No reason provided";
-
-    // Find user by first name
+    // Find user
     const match = members.find(u =>
       u.name.toLowerCase().includes(nameInput)
     );
@@ -39,7 +34,7 @@ module.exports = {
       return message.reply("❌ No user found with that name.");
 
     return message.reply({
-      body: `@${match.name}\n Reason: ${reason}`,
+      body: `@${match.name}\n📌reason: ${reason}`,
       mentions: [{ id: match.id, tag: `@${match.name}` }]
     });
   }
