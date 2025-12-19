@@ -1,87 +1,88 @@
 module.exports = {
   config: {
-    name: "youtube",
-    version: "1.0",
+    name: "yt",
+    aliases: ["yt"],
+    version: "2.0",
     role: 0,
-    author: "kshitiz",
-    cooldowns: 40,
-    shortdescription: "send YouTube video",
-    longdescription: "",
+    author: "kshitiz | speed optimized",
+    cooldowns: 30,
+    shortDescription: "Fast YouTube video",
     category: "video",
-    usages: "{pn} video name",
+    usages: "{pn} <video name>",
     dependencies: {
       "fs-extra": "",
-      "request": "",
-      "axios": "",
       "ytdl-core": "",
       "yt-search": ""
     }
   },
 
-  onStart: async ({ api, event }) => {
-    const axios = require("axios");
+  onStart: async ({ api, event, args }) => {
     const fs = require("fs-extra");
     const ytdl = require("ytdl-core");
-    const request = require("request");
     const yts = require("yt-search");
+    const path = require("path");
 
-    const input = event.body;
-    const text = input.substring(12);
-    const data = input.split(" ");
-
-    if (data.length < 2) {
-      return api.sendMessage("Please specify a video name.", event.threadID);
+    if (!args.length) {
+      return api.sendMessage(
+        "❌ | Video name দাও\n\nExample:\nyt funny video",
+        event.threadID
+      );
     }
 
-    data.shift();
-    const videoName = data.join(" ");
+    const query = args.join(" ");
+    const cacheDir = path.join(__dirname, "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
     try {
-      api.sendMessage(`✅ | Searching video for "${videoName}".\n⏳ | Please wait...`, event.threadID);
+      api.sendMessage(`⚡ Searching: ${query}`, event.threadID);
 
-      const searchResults = await yts(videoName);
-      if (!searchResults.videos.length) {
-        return api.sendMessage("No video found.", event.threadID, event.messageID);
-      }
+      // 🔥 FAST SEARCH (only first result)
+      const res = await yts({ query, pages: 1 });
+      if (!res.videos.length)
+        return api.sendMessage("❌ | Video পাওয়া যায়নি", event.threadID);
 
-      const video = searchResults.videos[0];
-      const videoUrl = video.url;
+      const video = res.videos[0];
+      const filePath = path.join(cacheDir, `${event.senderID}.mp4`);
 
-      const stream = ytdl(videoUrl, { filter: "audioandvideo" });
-
-      const fileName = `${event.senderID}.mp4`;
-      const filePath = __dirname + `/cache/${fileName}`;
+      // 🚀 FASTEST DOWNLOAD SETTINGS
+      const stream = ytdl(video.url, {
+        quality: "18", // 360p (fastest + safe)
+        filter: "audioandvideo",
+        highWaterMark: 1 << 25 // BIG BUFFER = FAST
+      });
 
       stream.pipe(fs.createWriteStream(filePath));
 
-      stream.on('response', () => {
-        console.info('[DOWNLOADER]', 'Starting download now!');
-      });
-
-      stream.on('info', (info) => {
-        console.info('[DOWNLOADER]', `Downloading video: ${info.videoDetails.title}`);
-      });
-
-      stream.on('end', () => {
-        console.info('[DOWNLOADER] Downloaded');
-
-        if (fs.statSync(filePath).size > 26214400) {
+      stream.on("end", () => {
+        if (fs.statSync(filePath).size > 25 * 1024 * 1024) {
           fs.unlinkSync(filePath);
-          return api.sendMessage('The file could not be sent because it is larger than 25MB.', event.threadID);
+          return api.sendMessage(
+            "❌ | Video size বেশি হয়ে গেছে (25MB+)",
+            event.threadID
+          );
         }
 
-        const message = {
-          body: `📹 | Here's your video\n\n🔮 | Title: ${video.title}\n⏰ | Duration: ${video.duration.timestamp}`,
-          attachment: fs.createReadStream(filePath)
-        };
-
-        api.sendMessage(message, event.threadID, () => {
-          fs.unlinkSync(filePath);
-        });
+        api.sendMessage(
+          {
+            body:
+              `⚡ FAST YouTube Video\n\n` +
+              `🎬 ${video.title}\n` +
+              `⏱ ${video.duration.timestamp}`,
+            attachment: fs.createReadStream(filePath)
+          },
+          event.threadID,
+          () => fs.unlinkSync(filePath)
+        );
       });
-    } catch (error) {
-      console.error('[ERROR]', error);
-      api.sendMessage(' An error occurred while processing the command.', event.threadID);
+
+      stream.on("error", () => {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        api.sendMessage("❌ | Download failed", event.threadID);
+      });
+
+    } catch (e) {
+      console.log(e);
+      api.sendMessage("⚠️ | Error হয়েছে, পরে ট্রাই করো", event.threadID);
     }
   }
 };
