@@ -1,77 +1,87 @@
-const a = require("axios");
-const b = require("fs");
-const c = require("path");
-const d = require("yt-search");
-
-const nix = "https://raw.githubusercontent.com/aryannix/stuffs/master/raw/apis.json";
-
 module.exports = {
-  config: {
-    name: "sing",
-    aliases: ["music", "song"],
-    version: "0.0.1",
-    author: "ArYAN",
-    countDown: 5,
-    role: 0,
-    shortDescription: "Sing tomake chai",
-    longDescription: "Search and download music from YouTube",
-    category: "MUSIC",
-    guide: "/music <song name or YouTube URL>"
-  },
+ config: {
+ name: "sing",
+ version: "1.0",
+ role: 0,
+ author: "kshitiz",
+ cooldowns: 5,
+ shortdescription: "download music from YouTube",
+ longdescription: "",
+ category: "music",
+ usages: "{pn} music name",
+ dependencies: {
+ "fs-extra": "",
+ "request": "",
+ "axios": "",
+ "ytdl-core": "",
+ "yt-search": ""
+ }
+ },
 
-  onStart: async function ({ api: e, event: f, args: g }) {
-    if (!g.length) return e.sendMessage("❌ Provide a song name or YouTube URL.", f.threadID, f.messageID);
+ onStart: async ({ api, event }) => {
+ const axios = require("axios");
+ const fs = require("fs-extra");
+ const ytdl = require("ytdl-core");
+ const request = require("request");
+ const yts = require("yt-search");
 
-    let baseApi;
-    const i = await e.sendMessage("🎵 Please wait...", f.threadID, null, f.messageID);
-    
-    try {
-      const configRes = await a.get(nix);
-      baseApi = configRes.data && configRes.data.api;
-      if (!baseApi) throw new Error("Configuration Error: Missing API in GitHub JSON.");
-    } catch (error) {
-      e.unsendMessage(i.messageID);
-      return e.sendMessage("❌ Failed to fetch API configuration from GitHub.", f.threadID, f.messageID);
-    }
+ const input = event.body;
+ const text = input.substring(12);
+ const data = input.split(" ");
 
-    let h = g.join(" ");
+ if (data.length < 2) {
+ return api.sendMessage("Please specify a music name.", event.threadID);
+ }
 
-    try {
-      let j;
-      if (h.startsWith("http")) {
-        j = h;
-      } else {
-        const k = await d(h);
-        if (!k || !k.videos.length) throw new Error("No results found.");
-        j = k.videos[0].url;
-      }
+ data.shift();
+ const musicName = data.join(" ");
 
-      const l = `${baseApi}/play?url=${encodeURIComponent(j)}`;
-      const m = await a.get(l);
-      const n = m.data;
+ try {
+ api.sendMessage(`✔ | Searching music for "${musicName}".\ ekxin parkhanuhos...`, event.threadID);
 
-      if (!n.status || !n.downloadUrl) throw new Error("API failed to return download URL.");
+ const searchResults = await yts(musicName);
+ if (!searchResults.videos.length) {
+ return api.sendMessage("kunai music vetiyena.", event.threadID, event.messageID);
+ }
 
-      const o = `${n.title}.mp3`.replace(/[\\/:"*?<>|]/g, "");
-      const p = c.join(__dirname, o);
+ const music = searchResults.videos[0];
+ const musicUrl = music.url;
 
-      const q = await a.get(n.downloadUrl, { responseType: "arraybuffer" });
-      b.writeFileSync(p, q.data);
+ const stream = ytdl(musicUrl, { filter: "audioonly" });
 
-      await e.sendMessage(
-        { attachment: b.createReadStream(p), body: `🎵 𝗠𝗨𝗦𝗜𝗖\n━━━━━━━━━━━━━━━\n\n${n.title}` },
-        f.threadID,
-        () => {
-          b.unlinkSync(p);
-          e.unsendMessage(i.messageID);
-        },
-        f.messageID
-      );
+ const fileName = `${event.senderID}.mp3`;
+ const filePath = __dirname + `/cache/${fileName}`;
 
-    } catch (r) {
-      console.error(r);
-      e.sendMessage(`❌ Failed to download song: ${r.message}`, f.threadID, f.messageID);
-      e.unsendMessage(i.messageID);
-    }
-  }
+ stream.pipe(fs.createWriteStream(filePath));
+
+ stream.on('response', () => {
+ console.info('[DOWNLOADER]', 'Starting download now!');
+ });
+
+ stream.on('info', (info) => {
+ console.info('[DOWNLOADER]', `Downloading music: ${info.videoDetails.title}`);
+ });
+
+   stream.on('end', () => {
+ console.info('[DOWNLOADER] Downloaded');
+
+ if (fs.statSync(filePath).size > 26214400) {
+ fs.unlinkSync(filePath);
+ return api.sendMessage('❌ | The file could not be sent because it is larger than 25MB.', event.threadID);
+ }
+
+ const message = {
+ body: `🙆‍♀️ ❀ tapaiko geet\ ❀ Title: ${music.title}\ Duration: ${music.duration.timestamp}`,
+ attachment: fs.createReadStream(filePath)
+ };
+
+ api.sendMessage(message, event.threadID, () => {
+ fs.unlinkSync(filePath);
+ });
+ });
+ } catch (error) {
+ console.error('[ERROR]', error);
+ api.sendMessage('🥱 ❀ An error occurred while processing the command.', event.threadID);
+ }
+ }
 };
