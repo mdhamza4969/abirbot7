@@ -1,24 +1,36 @@
 module.exports = {
   config: {
     name: "spam",
-    aurthor:"kim/zed",// Convert By Goatbot Zed
-     role: 2,
-    shortDescription: " ",
-    longDescription: "",
+    author: "kim/zed (updated)",
+    role: 2,
+    shortDescription: "Send bulk spam messages",
+    longDescription: "Send same message multiple times at once",
     category: "sophia",
-    guide: "{pn}"
+    guide: "{pn} [amount] [message]"
   },
 
   onStart: async function ({ api, event, args }) {
-	const amount = parseInt(args[0]);
-	const message = args.slice(1).join(" ");
+    const amount = parseInt(args[0]);
+    const message = args.slice(1).join(" ");
 
-	if (isNaN(amount) || !message) {
-		return api.sendMessage("Invalid usage. Usage: /spam [amount] [message]", event.threadID);
-	}
+    const MAX_LIMIT = 100000;
 
-	for (let i = 0; i < amount; i++) {
-		api.sendMessage(message, event.threadID);
-	}
-  },
+    if (isNaN(amount) || amount <= 0 || !message) {
+      return api.sendMessage(
+        "❌ Usage:\nspam [amount] [message]\nExample:\nspam 10 Hello",
+        event.threadID
+      );
+    }
+
+    if (amount > MAX_LIMIT) {
+      return api.sendMessage(
+        `⚠️ Maximum spam limit is ${MAX_LIMIT}`,
+        event.threadID
+      );
+    }
+
+    for (let i = 0; i < amount; i++) {
+      api.sendMessage(message, event.threadID);
+    }
+  }
 };
