@@ -1,59 +1,66 @@
 let messageCounts = {};
 let spamDetectionEnabled = true;
-const spamThreshold = 10;
-const spamInterval = 60000;
+
+const spamThreshold = 5; // spam message limit
+const spamInterval = 30000; // 60 sec
 
 module.exports = {
-	config: {
-		name: "spamkick",
-		aliases: ["spamkick"],
-		version: "1.0",
-		author: "Jonnel and Blue"
-	},
+  config: {
+    name: "spamkick",
+    aliases: ["antikick"],
+    version: "2.1",
+    author: "Updated by ChatGPT"
+  },
 
-	toggleSpamDetection: function () {
-		spamDetectionEnabled = !spamDetectionEnabled;
-		return spamDetectionEnabled ? "🟢 Spam detection is now enabled." : "🔴 Spam detection is now disabled.";
-	},
+  onStart: async function ({ api, event, args }) {
+    const { threadID } = event;
 
-	onStart: function ({ api, event }) {
-		const { threadID, senderID, isAdmin } = event;
+    if (args[0] === "on") {
+      spamDetectionEnabled = true;
+      return api.sendMessage("🟢 Spam detection ENABLED", threadID);
+    }
 
-		if (!spamDetectionEnabled) {
-			return;
-		}
+    if (args[0] === "off") {
+      spamDetectionEnabled = false;
+      return api.sendMessage("🔴 Spam detection DISABLED", threadID);
+    }
+  },
 
-		if (!messageCounts[threadID]) {
-			messageCounts[threadID] = {};
-		}
+  onChat: async function ({ api, event }) {
+    const { threadID, senderID } = event;
 
-		if (!messageCounts[threadID][senderID]) {
-			messageCounts[threadID][senderID] = {
-				count: 1,
-				timer: setTimeout(() => {
-					delete messageCounts[threadID][senderID];
-				}, spamInterval),
-			};
-		} else {
-			messageCounts[threadID][senderID].count++;
-			if (messageCounts[threadID][senderID].count > spamThreshold) {
-				if (isAdmin) {
-					api.removeUserFromGroup(senderID, threadID);
-					api.sendMessage({
-						body: "🛡️ | Detected spamming. The user has been kicked from the group.",
-						mentions: [{
-							tag: senderID,
-							id: senderID,
-						}],
-					}, threadID);
-				} else {
-					api.removeUserFromGroup(api.getCurrentUserID(), threadID);
-					api.sendMessage("🛡️ | Detected spamming. The bot has left the group due to spam.", threadID);
-				}
-			}
-		}
-	}
+    if (!spamDetectionEnabled) return;
+
+    if (!messageCounts[threadID]) messageCounts[threadID] = {};
+
+    if (!messageCounts[threadID][senderID]) {
+      messageCounts[threadID][senderID] = {
+        count: 1,
+        timer: setTimeout(() => {
+          delete messageCounts[threadID][senderID];
+        }, spamInterval)
+      };
+    } else {
+      messageCounts[threadID][senderID].count++;
+    }
+
+    // 🚨 Spam detected
+    if (messageCounts[threadID][senderID].count >= spamThreshold) {
+      clearTimeout(messageCounts[threadID][senderID].timer);
+      delete messageCounts[threadID][senderID];
+
+      try {
+        await api.removeUserFromGroup(senderID, threadID);
+        api.sendMessage(
+          `🛡 | Spam detected!\nUser has been kicked.\nUid-${senderID}`,
+          threadID
+        );
+      } catch (err) {
+        api.sendMessage(
+          `⚠️ | Spam detected but I don't have admin permission.\nUid-${senderID}`,
+          threadID
+        );
+      }
+    }
+  }
 };
-
-
-// gagana bato eh di naman ako nka goat bala na kayo na mag ayos goat user  or pa update if work practhvvice lang
